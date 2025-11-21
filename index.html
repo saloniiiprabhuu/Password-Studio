@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Password Studio — Generator & Toolkit</title>
+<meta name="description" content="Secure password generator with custom words, passphrase mode, pattern mode, entropy & batch export.">
+<style>
+  :root{
+    /* Light theme variables */
+    --bg-1: #fff8ff;
+    --bg-2: #f8fffb;
+    --card-bg: rgba(255,255,255,0.95);
+    --muted: #6b6b7a;
+    --accent-a: #ff77d3;
+    --accent-b: #8b5cf6;
+    --accent-c: #60a5fa;
+    --accent-d: #34d399;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace;
+    --radius: 18px;
+    --shadow: 0 18px 50px rgba(20,16,40,0.08);
+    --border: rgba(15,23,42,0.06);
+    --panel-bg: linear-gradient(180deg, rgba(255,255,255,0.85), #ffffff);
+    --text: #0f172a;
+    --kbd-bg: #f3f4f6;
+  }
+
+  /* Dark theme override (applied when .dark class on body) */
+  body.dark {
+    --bg-1: #0f1724;
+    --bg-2: #071029;
+    --card-bg: rgba(6,10,20,0.6);
+    --muted: #98a0b3;
+    --accent-a: #f472b6;
+    --accent-b: #7c3aed;
+    --accent-c: #60a5fa;
+    --accent-d: #34d399;
+    --shadow: 0 10px 30px rgba(2,6,23,0.7);
+    --border: rgba(255,255,255,0.06);
+    --panel-bg: linear-gradient(180deg, rgba(6,10,20,0.6), rgba(0,0,0,0.35));
+    --text: #e6eef8;
+    --kbd-bg: #07102a;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial;color:var(--text);
+    background:linear-gradient(180deg,var(--bg-1),var(--bg-2));
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+  .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:18px}
+
+  /* Shell */
+  .shell{
+    width:100%;max-width:1200px;
+    background:var(--card-bg);
+    border-radius:18px;
+    box-shadow:var(--shadow);
+    display:grid;grid-template-columns:1fr 380px;gap:20px;padding:18px;
+    border:1px solid var(--border);
+  }
+  @media (max-width:980px){ .shell{grid-template-columns:1fr;padding:14px} }
+
+  header{display:flex;align-items:center;gap:12px}
+  .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent-a),var(--accent-b));display:grid;place-items:center;font-weight:800;color:white;box-shadow:0 8px 30px rgba(0,0,0,0.06);font-size:18px}
+  h1{margin:0;font-size:18px}
+  p.lead{margin:0;color:var(--muted);font-size:13px}
+
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+  .panel{background:var(--panel-bg);border-radius:12px;padding:12px;border:1px solid var(--border)}
+  .controls{display:grid;gap:12px}
+  input[type="text"], input[type="number"], textarea, select{
+    width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--border);background:transparent;font-size:14px;color:var(--text);outline:none;}
+  textarea{min-height:78px;resize:vertical}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{padding:10px 12px;border-radius:12px;border:0;background:linear-gradient(90deg,var(--accent-a),var(--accent-b));color:white;font-weight:700;cursor:pointer;box-shadow:0 10px 30px rgba(139,92,246,0.09)}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--muted);font-weight:600;box-shadow:none}
+  .btn.small{padding:8px 10px;font-size:13px;border-radius:10px}
+  .hint{font-size:12px;color:var(--muted)}
+
+  .meter{margin-top:6px}
+  .meter-bar{height:16px;background:linear-gradient(90deg,#fafafa,#fbfbff);border-radius:999px;border:1px solid var(--border);overflow:hidden}
+  .meter-fill{height:100%;width:0;transition:width .45s ease, background .25s ease}
+
+  .result-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .result-item{display:flex;gap:8px;align-items:center;padding:8px;border-radius:10px;background:linear-gradient(90deg,rgba(255,255,255,0.02),transparent);border:1px dashed var(--border);font-family:var(--mono);font-size:13px;color:var(--text)}
+  .result-item code{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+
+  .side{display:flex;flex-direction:column;gap:12px}
+  .cond{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--muted)}
+  .dot{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:transparent;border:1px solid var(--border);color:var(--muted);font-weight:700}
+  .cond.ok .dot{background:linear-gradient(90deg,#dcfce7,#ecfdf5);border-color:rgba(34,197,94,0.08);color:#065f46}
+
+  .badge{display:inline-block;padding:6px 8px;border-radius:999px;background:linear-gradient(90deg,var(--accent-c),var(--accent-d));color:white;font-weight:700;font-size:12px}
+
+  .tog{display:flex;gap:8px;align-items:center}
+  .switch{width:48px;height:28px;background:#e9e9ff;border-radius:999px;position:relative;cursor:pointer;border:1px solid var(--border)}
+  .switch .dot{width:20px;height:20px;border-radius:999px;background:white;position:absolute;left:4px;top:4px;transition:left .18s ease}
+  .switch.on{background:linear-gradient(90deg,var(--accent-a),var(--accent-b))}
+  .switch.on .dot{left:24px}
+
+  .kbd{display:inline-block;padding:6px 8px;border-radius:8px;background:var(--kbd-bg);border:1px solid var(--border);font-family:var(--mono);font-size:12px}
+
+  /* responsive: make actions large and stacked on narrow screens */
+  @media (max-width:720px){
+    .grid-2{grid-template-columns:1fr}
+    .shell{gap:12px;padding:12px}
+    .logo{width:52px;height:52px}
+    .btn{width:100%}
+    .btn.small{width:auto}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell" role="application" aria-labelledby="title">
+      <main>
+        <header>
+          <div class="logo" aria-hidden="true">GS</div>
+          <div>
+            <h1 id="title">Password Studio</h1>
+            <p class="lead">Generator toolkit — passwords, passphrases, patterns, and batch export.</p>
+          </div>
+        </header>
+
+        <section class="controls" aria-labelledby="genOptions" style="margin-top:12px">
+          <div class="panel" id="genOptions">
+            <label for="userWords">Words / fragments to include (comma separated)</label>
+            <textarea id="userWords" placeholder="e.g., blue, mango, 1997 — these can be embedded"></textarea>
+
+            <div class="grid-2" style="margin-top:10px">
+              <div>
+                <label for="length">Desired length (for passwords)</label>
+                <input id="length" type="number" min="6" max="512" value="16" />
+              </div>
+              <div>
+                <label for="count">Batch size (generate multiple)</label>
+                <input id="count" type="number" min="1" max="50" value="6" />
+              </div>
+            </div>
+
+            <!-- Passphrase controls -->
+            <div style="margin-top:10px" class="grid-2">
+              <div>
+                <label>Passphrase mode</label>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+                  <label class="tog"><div id="passToggle" class="switch" role="switch" aria-checked="false"><div class="dot"></div></div><span class="hint">Use passphrase</span></label>
+                  <label style="display:flex;flex-direction:column;width:100%"><span class="hint">Words</span><input id="passWordsCount" type="number" min="2" max="12" value="4" /></label>
+                </div>
+              </div>
+              <div>
+                <label>Passphrase separator</label>
+                <select id="passSep">
+                  <option value="-">- (dash)</option>
+                  <option value="_">_ (underscore)</option>
+                  <option value=" ">space</option>
+                  <option value=":">: (colon)</option>
+                  <option value="">no separator</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-top:10px" class="grid-2">
+              <div>
+                <label>Include character sets</label>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <label><input id="inclLower" type="checkbox" checked /> lowercase</label>
+                  <label><input id="inclUpper" type="checkbox" checked /> UPPER</label>
+                  <label><input id="inclDigits" type="checkbox" checked /> digits</label>
+                  <label><input id="inclSymbols" type="checkbox" checked /> symbols</label>
+                </div>
+              </div>
+              <div>
+                <label>Advanced</label>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <label><input id="leet" type="checkbox" /> leet substitutions</label>
+                  <label><input id="pronounce" type="checkbox" /> pronounceable</label>
+                  <label><input id="avoidAmbig" type="checkbox" checked /> avoid ambig</label>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+              <button id="generateBtn" class="btn">Generate</button>
+              <button id="regenerateBtn" class="btn ghost small">Shuffle & Regenerate</button>
+              <button id="copyAll" class="btn ghost small">Copy All</button>
+              <button id="downloadCSV" class="btn small">Download CSV</button>
+              <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+                <div class="hint">Theme</div>
+                <div id="themeToggle" class="switch" title="Toggle theme" role="switch" aria-checked="false"><div class="dot"></div></div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px" class="meter">
+              <div class="meter-bar" aria-hidden="true"><div id="meterFill" class="meter-fill"></div></div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <div id="strengthLabel" style="font-weight:700">—</div>
+                <div id="strengthScore" style="color:var(--muted)"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-top:10px">
+            <label for="patternInput">Optional pattern (tokens: {w} word, {s} symbol, {d} digit, {L} upper, {l} lower, {r} random)</label>
+            <input id="patternInput" placeholder="e.g., {w}-{d}{d}{s}{L}{l}" />
+            <div class="hint" style="margin-top:8px">Pattern mode will be used instead of flexible generation when set.</div>
+          </div>
+
+          <div class="panel" style="margin-top:10px">
+            <label>Results</label>
+            <div class="result-list" id="results" aria-live="polite"></div>
+            <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <button id="clearResults" class="btn ghost small">Clear</button>
+              <div style="margin-left:auto" class="hint">Local session only • no network</div>
+            </div>
+          </div>
+
+        </section>
+      </main>
+
+      <aside class="side" aria-labelledby="tools">
+        <div class="panel">
+          <strong id="tools">Utilities & estimates</strong>
+          <div style="margin-top:8px" class="hint">Adjust how the generator combines your input words and how the remainder is filled.</div>
+
+          <div style="margin-top:10px">
+            <label>Entropy & time</label>
+            <div style="margin-top:8px">
+              <div style="display:flex;justify-content:space-between"><div class="hint">Online (100/sec)</div><div id="estOnline" class="hint">—</div></div>
+              <div style="display:flex;justify-content:space-between"><div class="hint">Fast GPU (1e9/sec)</div><div id="estGPU" class="hint">—</div></div>
+              <div style="display:flex;justify-content:space-between"><div class="hint">Botnet (1e12/sec)</div><div id="estBot" class="hint">—</div></div>
+            </div>
+          </div>
+
+          <div style="margin-top:8px">
+            <label>Passphrase example</label>
+            <div class="hint" style="margin-top:6px">If passphrase mode active, the generator picks random words (or uses your provided words) and joins them with the chosen separator.</div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>Keyboard shortcuts</label>
+            <div class="hint">Generate ⌘/Ctrl + G • Copy All ⌘/Ctrl + Shift + C • Clear ⌘/Ctrl + Shift + X</div>
+          </div>
+
+          <div style="margin-top:12px" class="decor" aria-hidden="true"></div>
+          <footer style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+            <div class="hint">Workshop-ready • client-only</div>
+            <div class="hint">No persistence</div>
+          </footer>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+/* Password Studio — responsive + dark theme + passphrase mode + pattern + batch + CSV
+   - everything runs client-side; no persistence or network calls.
+*/
+
+// Short utility selectors
+const $ = s => document.querySelector(s);
+
+// Inputs & controls
+const userWordsInput = $('#userWords');
+const lengthInput = $('#length');
+const countInput = $('#count');
+const inclLower = $('#inclLower');
+const inclUpper = $('#inclUpper');
+const inclDigits = $('#inclDigits');
+const inclSymbols = $('#inclSymbols');
+const leetToggle = $('#leet');
+const pronounceToggle = $('#pronounce');
+const avoidAmbigToggle = $('#avoidAmbig');
+const generateBtn = $('#generateBtn');
+const regenerateBtn = $('#regenerateBtn');
+const resultsBox = $('#results');
+const copyAllBtn = $('#copyAll');
+const downloadCSVBtn = $('#downloadCSV');
+const clearResultsBtn = $('#clearResults');
+const strengthLabel = $('#strengthLabel');
+const strengthScore = $('#strengthScore');
+const meterFill = $('#meterFill');
+const estOnlineEl = $('#estOnline');
+const estGPUEl = $('#estGPU');
+const estBotEl = $('#estBot');
+const patternInput = $('#patternInput');
+const passToggle = $('#passToggle');
+const passWordsCount = $('#passWordsCount');
+const passSep = $('#passSep');
+const themeToggle = $('#themeToggle');
+
+let lastBatch = [];
+
+// Character sets
+const CHARSETS = {
+  lower: 'abcdefghijklmnopqrstuvwxyz',
+  upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  digits: '0123456789',
+  symbols: '!@#$%^&*()-_=+[]{};:,.<>/?~'
+};
+const AMBIG = 'O0l1I';
+const LEET_MAP = { a:'@', A:'@', e:'3', E:'3', i:'1', I:'1', o:'0', O:'0', s:'$', S:'$', t:'7', T:'7' };
+
+// small built-in passphrase wordlist (common words) — kept local for offline use
+const WORDLIST = [
+  'apple','banana','cloud','river','stone','ember','willow','lunar','ember','pearl','sage','violet','maple','sunset','orchid',
+  'mango','pepper','cider','honey','breeze','crystal','meadow','ocean','dawn','dusk','rust','saffron','silk','marble','copper',
+  'pilot','rocket','ember','forest','garden','harbor','island','jasmine','kelp','lotus','mirage','nebula','opal','quartz','ripple',
+  'spruce','tango','ultra','velvet','whisk','xenon','yarrow','zephyr','alder','birch','cedar','drift','eclipse','fable','glimmer',
+  'harvest','indigo','jewel','kettle','lagoon','meadow','nymph','opal','petal','quill','raven','serene','tulip','umbra','vast',
+  'willow','yonder','zest','azure','bubble','cocoa','dolce','echo','flare','gala','haven','iris','jolt','koi','lyric','muse',
+  'nimbus','ozone','poppy','quarry','rosin','sable','thimble','umber','vivid','waltz','xylophone','yosemite','zenith'
+];
+
+// secure RNG helpers
+function randInt(n){
+  if(n <= 0) return 0;
+  const arr = new Uint32Array(1);
+  window.crypto.getRandomValues(arr);
+  return arr[0] % n;
+}
+function choice(arr){ return arr[randInt(arr.length)]; }
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = randInt(i+1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function randomFromPool(pool, n){
+  let out = '';
+  const arr = new Uint32Array(n);
+  window.crypto.getRandomValues(arr);
+  for(let i=0;i<n;i++) out += pool[arr[i] % pool.length];
+  return out;
+}
+
+// pool and entropy
+function buildPool(opts){
+  let pool = '';
+  if(opts.lower) pool += CHARSETS.lower;
+  if(opts.upper) pool += CHARSETS.upper;
+  if(opts.digits) pool += CHARSETS.digits;
+  if(opts.symbols) pool += CHARSETS.symbols;
+  if(opts.avoidAmbig){
+    pool = pool.split('').filter(ch => !AMBIG.includes(ch)).join('');
+  }
+  if(pool.length === 0) pool = CHARSETS.lower;
+  return pool;
+}
+function estimateEntropy(len, poolSize){ return len * Math.log2(poolSize); }
+function crackEstimates(len, poolSize){
+  // keyspace = poolSize^len; expected guesses = keyspace/2
+  // return seconds for three rates
+  const log10 = (len * Math.log10(poolSize)) - Math.log10(2);
+  // compute with log10 to avoid overflow
+  const decade = Math.pow(10, Math.max(0, Math.min(300, log10))); // if huge becomes Infinity handled later
+  // but better compute via Math.pow if reasonable:
+  // We'll compute seconds by log method when possible
+  // For display, convert to human-friendly if extremely large
+  const guessesLog10 = len * Math.log10(poolSize) - Math.log10(2);
+  const online = guessesLog10 > 300 ? Infinity : Math.pow(10, guessesLog10) / 100;
+  const gpu = guessesLog10 > 300 ? Infinity : Math.pow(10, guessesLog10) / 1e9;
+  const bot = guessesLog10 > 300 ? Infinity : Math.pow(10, guessesLog10) / 1e12;
+  return { online, gpu, bot };
+}
+function secondsToHuman(sec){
+  if(!isFinite(sec)) return '> 10³⁰ years';
+  sec = Math.max(0, Math.floor(sec));
+  const units = [
+    {label:'year', secs:365*24*3600},
+    {label:'day', secs:24*3600},
+    {label:'hour', secs:3600},
+    {label:'minute', secs:60},
+    {label:'second', secs:1}
+  ];
+  const parts=[];
+  for(const u of units){
+    const v=Math.floor(sec/u.secs);
+    if(v>0){ parts.push(v+' '+u.label+(v>1?'s':'')); sec-=v*u.secs; }
+    if(parts.length>=2) break;
+  }
+  if(parts.length===0) return 'less than 1 second';
+  return parts.join(', ');
+}
+
+// parse user words
+function parseUserWords(text){
+  return text.split(',').map(s => s.trim()).filter(Boolean);
+}
+// leet
+const LEET_MAP = { a:'@', A:'@', e:'3', E:'3', i:'1', I:'1', o:'0', O:'0', s:'$', S:'$', t:'7', T:'7' };
+function applyLeet(str){
+  return str.split('').map(ch => (LEET_MAP[ch] && Math.random() < 0.7) ? LEET_MAP[ch] : ch).join('');
+}
+
+// pronounceable (simple)
+const SYLLS = ['ba','be','bi','bo','bu','la','le','li','lo','lu','ra','re','ri','ro','ru','na','ne','ni','no','nu','sa','se','si','so','su','ta','te','ti','to','tu','ma','me','mi','mo','mu'];
+function pronounceable(len){
+  let out='';
+  while(out.length < len) out += choice(SYLLS);
+  return out.slice(0,len);
+}
+
+// passphrase generator (uses WORDLIST + user words)
+function generatePassphrase(opts){
+  const userWords = parseUserWords(opts.userWords);
+  const poolWords = WORDLIST.slice();
+  // incorporate user words preferentially
+  const words = [];
+  // try to include any user words provided (up to count)
+  if(userWords.length){
+    for(const w of userWords){
+      if(words.length >= opts.passCount) break;
+      const clean = w.replace(/\s+/g,'').toLowerCase();
+      if(clean) words.push(clean);
+    }
+  }
+  // fill remaining with random unique picks from wordlist
+  shuffle(poolWords);
+  for(const w of poolWords){
+    if(words.length >= opts.passCount) break;
+    if(!words.includes(w)) words.push(w);
+  }
+  // optionally apply leet to some elements
+  let finalWords = words.map(w => (opts.leet && Math.random() < 0.4) ? applyLeet(w) : w);
+  // if avoid ambiguous, remove ambiguous characters in join stage (not in words)
+  const sep = opts.passSep;
+  return finalWords.join(sep);
+}
+
+// pattern filler
+function fillPattern(pattern, userWords, pool, opts){
+  let out = '';
+  for(let i=0;i<pattern.length;i++){
+    if(pattern[i] === '{'){
+      const close = pattern.indexOf('}', i);
+      if(close > i){
+        const token = pattern.slice(i+1, close);
+        if(token === 'w'){
+          out += userWords.length ? choice(userWords) : randomFromPool(CHARSETS.lower, 3);
+        } else if(token === 'd'){
+          out += choice(CHARSETS.digits);
+        } else if(token === 's'){
+          out += choice(CHARSETS.symbols);
+        } else if(token === 'L'){
+          out += choice(CHARSETS.upper);
+        } else if(token === 'l'){
+          out += choice(CHARSETS.lower);
+        } else if(token === 'r'){
+          out += choice(pool.split(''));
+        }
+        i = close;
+        continue;
+      }
+    }
+    out += pattern[i];
+  }
+  return out;
+}
+
+// ensure required inclusions
+function ensureInclusions(arr, opts){
+  const need = [];
+  if(opts.lower) need.push(choice(CHARSETS.lower));
+  if(opts.upper) need.push(choice(CHARSETS.upper));
+  if(opts.digits) need.push(choice(CHARSETS.digits));
+  if(opts.symbols) need.push(choice(CHARSETS.symbols));
+  for(const ch of need){
+    const pos = randInt(arr.length + 1);
+    arr.splice(pos, 0, ch);
+  }
+  return arr;
+}
+
+// single password generation
+function generateOne(opts){
+  const userWords = parseUserWords(opts.userWords);
+  const pool = buildPool(opts);
+  const targetLen = Math.max(1, Math.min(1024, Math.round(opts.length)));
+
+  // Passphrase mode
+  if(opts.passphrase){
+    // if user provided words and wants shorter word count, that takes precedence
+    const pcount = Math.max(2, Math.min(12, Math.round(opts.passCount || 4)));
+    const passOpts = { userWords: opts.userWords, passCount: pcount, passSep: opts.passSep, leet: opts.leet };
+    let pp = generatePassphrase(passOpts);
+    // if user wants digits/symbols in passphrase, sprinkle them
+    if(opts.digits || opts.symbols){
+      const extras = [];
+      if(opts.digits) extras.push(choice(CHARSETS.digits));
+      if(opts.symbols) extras.push(choice(CHARSETS.symbols));
+      // insert extras at random positions among separators
+      let parts = pp.split(opts.passSep);
+      for(const e of extras){
+        const pos = Math.min(parts.length - 1, Math.max(0, randInt(parts.length)));
+        parts[pos] = parts[pos] + e;
+      }
+      pp = parts.join(opts.passSep);
+    }
+    // finally, if targetLen requested and pp is longer, trim, else pad with pool
+    if(pp.length > targetLen) pp = pp.slice(0, targetLen);
+    if(pp.length < targetLen) pp += randomFromPool(pool, targetLen - pp.length);
+    if(opts.avoidAmbig) pp = pp.split('').filter(ch => !AMBIG.includes(ch)).join('');
+    return pp;
+  }
+
+  // Pattern mode
+  if(opts.pattern && opts.pattern.trim().length > 0){
+    let out = fillPattern(opts.pattern, userWords, pool, opts);
+    if(out.length < targetLen) out += randomFromPool(pool, targetLen - out.length);
+    if(out.length > targetLen) out = out.slice(0, targetLen);
+    if(opts.leet) out = applyLeet(out);
+    if(opts.avoidAmbig) out = out.split('').filter(ch => !AMBIG.includes(ch)).join('');
+    return out;
+  }
+
+  // Pronounceable mode
+  if(opts.pronounce){
+    let base = pronounceable(targetLen);
+    // embed user words if present
+    if(userWords.length){
+      const words = userWords.slice(0,2).map(w => w.replace(/\s+/g,''));
+      let chars = base.split('');
+      let cursor = 0;
+      for(const w of words){
+        const pos = Math.min(cursor + randInt(4) + 1, chars.length-1);
+        chars.splice(pos, Math.min(w.length, chars.length - pos), ...w.split(''));
+        cursor = pos + w.length + 1;
+      }
+      base = chars.join('').slice(0, targetLen);
+    }
+    if(opts.leet) base = applyLeet(base);
+    if(opts.avoidAmbig) base = base.split('').filter(ch => !AMBIG.includes(ch)).join('');
+    let arr = base.split('');
+    arr = ensureInclusions(arr, opts);
+    let out = arr.join('').slice(0,targetLen);
+    if(out.length < targetLen) out += randomFromPool(pool, targetLen - out.length);
+    return out;
+  }
+
+  // Flexible mode: embed user words then pad
+  let pieces = [];
+  if(userWords.length){
+    const words = shuffle(userWords.slice());
+    for(const w of words){
+      let piece = w.replace(/\s+/g,'');
+      if(opts.leet && Math.random() < 0.5) piece = applyLeet(piece);
+      pieces.push(piece);
+      if(pieces.join('').length >= targetLen) break;
+    }
+  }
+  let candidate = pieces.join(choice(['-','_','.','~','*','']));
+  if(candidate.length < targetLen) candidate += randomFromPool(pool, targetLen - candidate.length);
+  if(candidate.length > targetLen) candidate = candidate.slice(0, targetLen);
+  let arr = candidate.split('');
+  arr = ensureInclusions(arr, opts);
+  arr = shuffle(arr);
+  let out = arr.join('').slice(0,targetLen);
+  if(out.length < targetLen) out += randomFromPool(pool, targetLen - out.length);
+  if(opts.avoidAmbig) out = out.split('').filter(ch=>!AMBIG.includes(ch)).join('');
+  return out;
+}
+
+// batch generation
+function generateBatch(opts, count){
+  const arr = [];
+  for(let i=0;i<count;i++) arr.push(generateOne(opts));
+  lastBatch = arr.slice();
+  return arr;
+}
+
+// scoring & UI helpers
+function scorePassword(pw){
+  let s = 0;
+  if(pw.length >= 8) s++;
+  if(pw.length >= 12) s++;
+  if(pw.length >= 16) s++;
+  if(/[a-z]/.test(pw)) s++;
+  if(/[A-Z]/.test(pw)) s++;
+  if(/[0-9]/.test(pw)) s++;
+  if(/[^A-Za-z0-9]/.test(pw)) s++;
+  return Math.min(s, 7);
+}
+function scoreLabel(score){
+  if(score <= 2) return 'Weak';
+  if(score <= 4) return 'Fair';
+  if(score <= 5) return 'Good';
+  return 'Excellent';
+}
+
+// render list
+function renderResults(list, opts){
+  resultsBox.innerHTML = '';
+  for(const pw of list){
+    const row = document.createElement('div');
+    row.className = 'result-item';
+    const code = document.createElement('code');
+    code.textContent = pw;
+    code.style.flex = '1';
+    code.style.overflow = 'hidden';
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.gap = '8px';
+    actions.style.alignItems = 'center';
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn ghost small';
+    copyBtn.textContent = 'Copy';
+    copyBtn.addEventListener('click', ()=> {
+      navigator.clipboard.writeText(pw).then(()=> {
+        copyBtn.textContent = 'Copied';
+        setTimeout(()=> copyBtn.textContent = 'Copy', 1200);
+      });
+    });
+    const info = document.createElement('div');
+    info.textContent = pw.length + ' chars';
+    info.style.color = 'var(--muted)';
+    info.style.fontSize = '12px';
+    actions.appendChild(copyBtn);
+    actions.appendChild(info);
+    row.appendChild(code);
+    row.appendChild(actions);
+    resultsBox.appendChild(row);
+  }
+}
+
+// UI: collect options
+function gatherOptions(){
+  return {
+    userWords: userWordsInput.value || '',
+    length: parseInt(lengthInput.value,10) || 16,
+    count: Math.max(1, Math.min(50, parseInt(countInput.value,10)||1)),
+    lower: inclLower.checked,
+    upper: inclUpper.checked,
+    digits: inclDigits.checked,
+    symbols: inclSymbols.checked,
+    leet: leetToggle.checked,
+    pronounce: pronounceToggle.checked,
+    avoidAmbig: avoidAmbigToggle.checked,
+    pattern: (patternInput.value || '').trim(),
+    passphrase: passToggle.classList.contains('on'),
+    passCount: parseInt(passWordsCount.value,10) || 4,
+    passSep: passSep.value || '-'
+  };
+}
+
+// update meter with first result / summary
+function updateMeterForString(pw, opts){
+  if(!pw){ meterFill.style.width='0%'; strengthLabel.textContent='—'; strengthScore.textContent=''; estOnlineEl.textContent='—'; estGPUEl.textContent='—'; estBotEl.textContent='—'; return; }
+  const pool = buildPool(opts);
+  const bits = Math.round(estimateEntropy(pw.length, pool) * 10) / 10;
+  const score = scorePassword(pw);
+  const pct = Math.round((score / 7) * 100);
+  meterFill.style.width = pct + '%';
+  if(score <= 2) meterFill.style.background = 'linear-gradient(90deg,#ffd6d6,#ffb4b4)';
+  else if(score <= 4) meterFill.style.background = 'linear-gradient(90deg,#fff3cd,#ffd59a)';
+  else if(score <= 5) meterFill.style.background = 'linear-gradient(90deg,#e6f9c8,#d6f4b0)';
+  else meterFill.style.background = 'linear-gradient(90deg,#d9fff6,#c7f7e6)';
+  strengthLabel.textContent = scoreLabel(score);
+  strengthScore.textContent = score + ' / 7';
+  const est = crackEstimates(pw.length, pool);
+  estOnlineEl.textContent = secondsToHuman(est.online);
+  estGPUEl.textContent = secondsToHuman(est.gpu);
+  estBotEl.textContent = secondsToHuman(est.bot);
+}
+
+// button events & shortcuts
+generateBtn.addEventListener('click', ()=> {
+  const opts = gatherOptions();
+  const batch = generateBatch(opts, opts.count);
+  renderResults(batch, opts);
+  updateMeterForString(batch[0] || '', opts);
+});
+
+regenerateBtn.addEventListener('click', ()=> {
+  const opts = gatherOptions();
+  const size = lastBatch.length > 0 ? lastBatch.length : opts.count;
+  const batch = generateBatch(opts, size);
+  renderResults(batch, opts);
+  updateMeterForString(batch[0] || '', opts);
+});
+
+copyAllBtn.addEventListener('click', ()=> {
+  if(lastBatch.length === 0) return;
+  const text = lastBatch.join('\n');
+  navigator.clipboard.writeText(text).then(()=> {
+    copyAllBtn.textContent = 'Copied';
+    setTimeout(()=> copyAllBtn.textContent = 'Copy All', 1200);
+  });
+});
+
+downloadCSVBtn.addEventListener('click', ()=> {
+  if(lastBatch.length === 0) return;
+  const rows = [['password','length']];
+  for(const pw of lastBatch) rows.push([pw, pw.length]);
+  const csv = rows.map(r => r.map(c=> `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'passwords.csv'; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+
+clearResultsBtn.addEventListener('click', ()=> {
+  lastBatch = []; resultsBox.innerHTML = ''; updateMeterForString('', gatherOptions());
+});
+
+// keyboard shortcuts
+document.addEventListener('keydown', (e)=> {
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g'){ e.preventDefault(); generateBtn.click(); }
+  if((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'c'){ e.preventDefault(); copyAllBtn.click(); }
+  if((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'x'){ e.preventDefault(); clearResultsBtn.click(); }
+});
+
+// toggles: passphrase & theme
+passToggle.addEventListener('click', ()=> {
+  passToggle.classList.toggle('on');
+  passToggle.setAttribute('aria-checked', passToggle.classList.contains('on'));
+});
+themeToggle.addEventListener('click', ()=> {
+  document.body.classList.toggle('dark');
+  themeToggle.classList.toggle('on');
+  themeToggle.setAttribute('aria-checked', themeToggle.classList.contains('on'));
+});
+
+// init: small demo on load
+(function init(){
+  const opts = gatherOptions();
+  const batch = generateBatch(opts, opts.count);
+  renderResults(batch, opts);
+  updateMeterForString(batch[0] || '', opts);
+})();
+
+</script>
+</body>
+</html>
